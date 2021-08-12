@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+  mongodb_container:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    ports:
+      - 27017:27017
+    volumes:
+      - /mongodb-data:/data/db
+      # - mongodb_data_container:/data/db
+
+  metabase-app:
+    image: metabase/metabase
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      # declare your mount volume /host/dir:/container/dir
+      - /home/app/metabase-data:/metabase-data
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+
+# volumes:
+#   mongodb_data_container:
