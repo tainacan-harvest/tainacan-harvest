@@ -12,6 +12,13 @@ import pandas as pd
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 
+ENDPOINTS = {
+    'MHN': 'https://mhn.acervos.museus.gov.br/',
+    'ITAIPU': 'http://museudearqueologiadeitaipu.museus.gov.br/',
+    'ARTE_SACRA': 'https://museudeartereligiosaetradicional.acervos.museus.gov.br/',
+    'GOIAS': 'http://museusibramgoias.acervos.museus.gov.br/',
+}
+
 # DAG
 default_args = {
     'owner': 'nitai-tiago',
@@ -27,14 +34,15 @@ dag = DAG(
     schedule_interval='33 2 * * *',
     catchup=False,
     description=__doc__,
+    concurrency=2,
     tags=['tainacan', 'stage']
 )
 
 
-def _execute_harvest():
-    base_url = 'https://mhn.acervos.museus.gov.br/wp-json/tainacan/v2/'
-    req_url = os.path.join(base_url, 'collections/')
-    response = requests.get(req_url)
+def _execute_harvest(endpoint: str):
+    base_url = os.path.join(endpoint, 'wp-json/tainacan/v2/')
+    get_coll_url = os.path.join(base_url, 'collections/')
+    response = requests.get(get_coll_url)
     collections = response.json()
 
     myclient = pymongo.MongoClient("mongodb://root:rootpassword@192.168.15.8:27017/")
@@ -45,8 +53,8 @@ def _execute_harvest():
         print(x.inserted_id)
 
     for collection in collections:
-        req_url = os.path.join(base_url, f'collection/{collection["id"]}/items')
-        response = requests.get(req_url)
+        get_items_url = os.path.join(base_url, f'collection/{collection["id"]}/items')
+        response = requests.get(get_items_url)
         items = response.json()['items']
         for item in items:
             insert_db(item)
@@ -58,10 +66,12 @@ def _execute_harvest():
 #     dag=dag
 # )
 
-execute_harvest = PythonOperator(
-    task_id='execute_harvest',
-    python_callable=_execute_harvest,
-    dag=dag
-)
+for site_name, endpoint in ENDPOINTS.items():
+    execute_harvest = PythonOperator(
+        task_id=f'execute_harvest_{site_name}',
+        python_callable=_execute_harvest,
+        op_kwargs={'endpoint': endpoint},
+        dag=dag
+    )
 
 # clear_db >> execute_harvest
