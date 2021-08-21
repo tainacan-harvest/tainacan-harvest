@@ -45,7 +45,7 @@ def _execute_harvest(endpoint: str):
     response = requests.get(get_coll_url)
     collections = response.json()
 
-    myclient = pymongo.MongoClient("mongodb://root:rootpassword@192.168.15.8:27017/")
+    myclient = pymongo.MongoClient("mongodb://airflow:airflow@mongodb:27017/")
     mydb = myclient["admin"]
     mycol = mydb["Tainacan-harvest"]
     def insert_db(item:dict):
