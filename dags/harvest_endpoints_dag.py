@@ -49,6 +49,7 @@ def _execute_harvest(endpoint: str):
     get_coll_url = os.path.join(base_url, 'collections/')
     response = requests.get(get_coll_url)
     collections = response.json()
+    count_inserted = 0
 
     for collection in collections:
         get_items_url = os.path.join(base_url, f'collection/{collection["id"]}/items')
@@ -56,6 +57,8 @@ def _execute_harvest(endpoint: str):
         items = response.json()['items']
         for item in items:
             insert_db(item)
+        count_inserted += len(items)
+    print(f'TOTAL de items inseridos: {count_inserted}')
 
 # Tasks
 # clear_db = PythonOperator(
