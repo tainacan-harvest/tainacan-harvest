@@ -44,20 +44,39 @@ def insert_db(item:dict):
     mycol = mydb["Tainacan-harvest"]
     mycol.insert_one(item)
 
+PAGE_SIZE = 97 # Tamanho máximo 96 (não está documentado)
+
+def get_collection_items(base_url: str, collection_id: int):
+    items_url = os.path.join(base_url, f'collection/{collection_id}/items')
+    all_items = []
+    page = 0
+    while True:
+        params = [
+            ('perpage', PAGE_SIZE),
+            ('offset', page * PAGE_SIZE),
+            ]
+        response = requests.get(items_url, params=params)
+        items = response.json()['items']
+        if len(items) == 0:
+            break
+        all_items.extend(items)
+        print(f'Baixou: {response.url}')
+        page += 1
+
+    return all_items
+
 def _execute_harvest(endpoint: str):
     base_url = os.path.join(endpoint, 'wp-json/tainacan/v2/')
     get_coll_url = os.path.join(base_url, 'collections/')
     response = requests.get(get_coll_url)
-    collections = response.json()
-    count_inserted = 0
 
-    for collection in collections:
-        get_items_url = os.path.join(base_url, f'collection/{collection["id"]}/items')
-        response = requests.get(get_items_url)
-        items = response.json()['items']
+    count_inserted = 0
+    for collection in response.json():
+        items = get_collection_items(base_url, collection['id'])
         for item in items:
             insert_db(item)
         count_inserted += len(items)
+
     print(f'TOTAL de items inseridos: {count_inserted}')
 
 # Tasks
