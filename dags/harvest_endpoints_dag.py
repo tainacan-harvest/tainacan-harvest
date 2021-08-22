@@ -38,19 +38,17 @@ dag = DAG(
     tags=['tainacan', 'stage']
 )
 
+def insert_db(item:dict):
+    myclient = pymongo.MongoClient("mongodb://airflow:airflow@mongodb:27017/")
+    mydb = myclient["admin"]
+    mycol = mydb["Tainacan-harvest"]
+    mycol.insert_one(item)
 
 def _execute_harvest(endpoint: str):
     base_url = os.path.join(endpoint, 'wp-json/tainacan/v2/')
     get_coll_url = os.path.join(base_url, 'collections/')
     response = requests.get(get_coll_url)
     collections = response.json()
-
-    myclient = pymongo.MongoClient("mongodb://airflow:airflow@mongodb:27017/")
-    mydb = myclient["admin"]
-    mycol = mydb["Tainacan-harvest"]
-    def insert_db(item:dict):
-        x = mycol.insert_one(item)
-        print(x.inserted_id)
 
     for collection in collections:
         get_items_url = os.path.join(base_url, f'collection/{collection["id"]}/items')
