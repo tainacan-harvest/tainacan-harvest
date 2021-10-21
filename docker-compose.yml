@@ -91,11 +91,13 @@
           timeout: 10s
           retries: 5
         restart: always
+        container_name: webserver
 
       airflow-scheduler:
         <<: *airflow-common
         command: scheduler
         restart: always
+        container_name: scheduler
 
       airflow-init:
         <<: *airflow-common
